@@ -1,0 +1,81 @@
+---
+title: "Steam Replays Over Time"
+author: "Nithish Narasimman"
+format: html
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+steam_data <- read_csv("../data/steam_replay_data.csv")
+mapping <- read_csv("../data/game_mapping_master.csv")
+
+full_data <- steam_data %>% 
+  left_join(mapping) %>%
+  mutate(playtime_in_hours = playtime_in_seconds / 3600,month = factor(month,
+                         levels = c("January", "February", "March", "April",
+                                    "May", "June", "July", "August",
+                                    "September", "October", "November", "December",
+                                    "total"),
+                         ordered = TRUE)) %>% 
+  select(game,month,year,playtime_in_seconds,playtime_in_hours)
+
+top_10_game_all_time <- full_data %>% 
+  filter(month == "total") %>% 
+  group_by(game) %>% 
+  summarize(total_hours = sum(playtime_in_hours)) %>%
+  arrange(desc(total_hours)) %>%
+  head(n=10)
+
+top_10_game_per_year <- full_data %>%
+  filter(month=="total") %>%
+  group_by(game,year) %>%
+  slice_max(order_by = playtime_in_hours, n = 10) %>%
+  ungroup()
+  
+```
+```{r}
+full_data
+```
+```{r, fig.width = 18, fig.height = 12}
+full_data %>% filter(month == "total") %>% 
+  ggplot(aes(x=year,y = playtime_in_hours,fill=game)) + 
+  geom_bar(stat = "identity") + 
+  theme_bw(base_size = 24) +
+  theme(legend.position = "right") + 
+  labs(title = "Time spent per game over the years", y = "Playtime (hours)", x = "", fill = "")
+```
+
+```{r, fig.width = 18, fig.height = 12}
+full_data %>% 
+  filter(month != "total") %>% 
+  mutate(full_date = str_c(month, year,sep = " ")) %>% 
+  ggplot(aes(x=full_date,y = playtime_in_hours,fill=game)) + 
+     geom_bar(stat = "identity") + 
+     theme_bw(base_size = 24) +
+     theme(legend.position = "right") + 
+     labs(title = "Time spent per game over the years", y = "Playtime (hours)", x = "", fill = "")
+```
+
+```{r, fig.width = 18, fig.height = 12}
+
+top_10_game_per_year %>% 
+  ggplot(aes(x=year,y=playtime_in_hours, fill = game)) + 
+  geom_bar(stat = "identity")  + 
+  theme_bw(base_size = 24) +
+  theme(legend.position = "right") + 
+  labs(title = "Time spent for Top 10 games per year", y = "Playtime (hours)", x = "", fill = "")
+```
+
+```{r}
+full_data %>% filter(month != "total") %>% group_by(month) %>% summarize(mean_playtime = mean(playtime_in_hours)) %>% ggplot(aes(x = month, y = mean_playtime, group=month)) + geom_point()
+```
+
+
+
+
+
+

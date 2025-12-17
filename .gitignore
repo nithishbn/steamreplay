@@ -1,0 +1,6 @@
+/target
+.direnv
+.Rhistory
+.envrc
+*.json
+
